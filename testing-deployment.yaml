@@ -1,0 +1,39 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx # if you have to deploy the application in some namespace the mention that but the secrets file and service -account should be present in the same namespace.
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      serviceAccountName: nginx #Here replace the name of the service account with which is created by you.
+      containers:
+      - name: nginx
+        image: sibasish934/testing-img:v5
+        ports:
+        - containerPort: 5000
+        volumeMounts:
+        - name: my-api-token
+          mountPath: /mnt/api-token  # cat /mnt/api-token/secret-token this way you can the mount as the volume
+          readOnly: true   
+        env:
+        - name: API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: api-token # this way you can pass the environement variables 
+              key: SECRET_TOKEN
+      volumes:
+      - name: my-api-token
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: aws-secrets # here when you are mounting the secrets manager with the volume then you need to create 
+                                            # volume with the same code mentioned in the file but change the name secretProviderClass name with the name which you have mentioned in secrets.yaml file.
